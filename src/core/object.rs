@@ -1,4 +1,4 @@
-use crate::core::segment::{PlacedSegment, Segment};
+use crate::core::segment::{self, PlacedSegment, Segment};
 
 pub trait CanScore {
 
@@ -14,7 +14,21 @@ impl<'a> Object<'a> {
             segments: vec![seg]
         }
     }
-    pub fn push(&mut self, seg: &'a PlacedSegment) {
-        self.segments.push(seg)
+    pub fn push(&mut self, seg: &'a PlacedSegment) -> Result<(), String> {
+        match self.segments.first() {
+            Some(&first_seg) => {
+                if first_seg.typ.is_same_type(&seg.typ) {
+                    self.segments.push(seg);
+                    Ok(())
+                }
+                else {
+                    Err("Not the same type pushing into object".to_string())
+                }
+            }
+            None => {
+                self.segments.push(seg);
+                Ok(())
+            }
+        }
     }
 }

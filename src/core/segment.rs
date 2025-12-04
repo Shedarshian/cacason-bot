@@ -1,9 +1,9 @@
-use std::rc::Rc;
 use crate::core::lib::*;
 use crate::core::object::Object;
 use crate::core::token::PlacedToken;
 use crate::core::board::Board;
 
+#[derive(Hash, PartialEq, Eq)]
 pub enum SegmentType {
     CitySegment { pennant: i32 },
     RoadSegment {},
@@ -12,7 +12,7 @@ pub enum SegmentType {
 }
 
 impl SegmentType {
-    fn is_same_type(&self, other: &SegmentType) -> bool {
+    pub fn is_same_type(&self, other: &SegmentType) -> bool {
         match (self, other) {
             (SegmentType::CitySegment { .. }, SegmentType::CitySegment { .. }) => true,
             (SegmentType::RoadSegment { .. }, SegmentType::RoadSegment { .. }) => true,
@@ -24,14 +24,14 @@ impl SegmentType {
 }
 
 pub struct Segment {
-    typ: SegmentType,
-    direction: Vec<Dir8>,
+    pub typ: SegmentType,
+    pub direction: Vec<Dir8>,
 }
 
 pub struct PlacedSegment {
-    typ: SegmentType,
-    direction: Vec<Dir8>,
-    tokens: Vec<PlacedToken>,
+    pub typ: SegmentType,
+    pub direction: Vec<Dir8>,
+    pub tokens: Vec<PlacedToken>,
 }
 
 impl PlacedSegment {

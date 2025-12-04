@@ -8,7 +8,9 @@ pub struct Tile {
 
 impl Tile {
     pub fn can_connect(&self, self_spin: Spin, other: &PlacedTile, direction: Dir4) -> bool {
-        false
+        let side = self.sides[direction.rotate(-self_spin).id()];
+        let other_side = other.sides[(-direction).id()];
+        side == other_side
     }
 }
 
@@ -25,5 +27,17 @@ impl PlacedTile {
             sides: tile.sides,
             orient,
         }
+    }
+    pub fn find_seg(&self, dir: Dir8, typ: &SegmentType) -> Option<&PlacedSegment> {
+        for seg in &self.segs {
+            if seg.typ.is_same_type(typ) {
+                for &seg_dir in &seg.direction {
+                    if seg_dir == dir {
+                        return Some(seg)
+                    }
+                }
+            }
+        }
+        None
     }
 }
