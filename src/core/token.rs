@@ -1,5 +1,4 @@
 use std::rc::Rc;
-use crate::core::player::Player;
 
 pub enum Token {
     Meeple,
@@ -16,5 +15,6 @@ pub enum PublicToken {
 
 pub struct PlacedToken {
     token: Token,
-    belonging: Vec<Rc<BelongingToken>>,
+    belonging: Vec<BelongingToken>,
+    player_id: usize
 }

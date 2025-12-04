@@ -1,17 +1,22 @@
-use crate::core::segment::{self, PlacedSegment, Segment};
+use std::collections::HashSet;
+use crate::core::segment::{PlacedSegment, SegmentType};
+use crate::core::lib::*;
 
 pub trait CanScore {
-
+    fn occupied(&self) -> bool;
+    fn complete(&self) -> bool;
 }
 
 pub struct Object<'a> {
-    segments: Vec<&'a PlacedSegment>
+    pub segments: Vec<&'a PlacedSegment>,
+    pub opened_side: HashSet<(Pos, Dir8)>
 }
 
 impl<'a> Object<'a> {
     pub fn create(seg: &'a PlacedSegment) -> Object<'a> {
         Object {
-            segments: vec![seg]
+            segments: vec![seg],
+            opened_side: HashSet::new()
         }
     }
     pub fn push(&mut self, seg: &'a PlacedSegment) -> Result<(), String> {
@@ -30,5 +35,21 @@ impl<'a> Object<'a> {
                 Ok(())
             }
         }
+    }
+    pub fn typ(&self) -> &'a SegmentType {
+        &self.segments[0].typ
+    }
+}
+
+impl<'a> CanScore for Object<'a> {
+    fn occupied(&self) -> bool {
+        for &seg in &self.segments {
+            if seg.occupied() { return true }
+        }
+        false
+    }
+    fn complete(&self) -> bool {
+        if self.typ().is_same_type(&SegmentType::FieldSegment {  }) { return false }
+        self.opened_side.len() == 0
     }
 }

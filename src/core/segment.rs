@@ -41,7 +41,10 @@ impl PlacedSegment {
             direction: seg.direction.iter()
                 .map(|x| x.rotate(orient))
                 .collect(),
-            tokens: vec![],
+            tokens: Vec::new(),
         }
+    }
+    pub fn occupied(&self) -> bool {
+        self.tokens.len() > 0
     }
 }
