@@ -1,12 +1,29 @@
 use crate::core::lib::*;
-use std::collections::HashSet;
-
-pub enum Segment {
-    CitySegment  { dir: HashSet<Dir8> },
-    RoadSegment  { dir: HashSet<Dir4> },
-    FieldSegment { dir: HashSet<Dir8> },
-}
+use crate::core::segment::*;
 
 pub struct Tile {
     segs: Vec<Segment>,
+    sides: [SideType; 4],
+}
+
+impl Tile {
+    pub fn can_connect(&self, self_spin: Spin, other: &PlacedTile, direction: Dir4) -> bool {
+        false
+    }
+}
+
+pub struct PlacedTile {
+    segs: Vec<PlacedSegment>,
+    sides: [SideType; 4],
+    orient: Spin,
+}
+
+impl PlacedTile {
+    pub fn create(tile: Tile, orient: Spin) -> PlacedTile {
+        PlacedTile {
+            segs: tile.segs.into_iter().map(|x| PlacedSegment::create(x, orient)).collect(),
+            sides: tile.sides,
+            orient,
+        }
+    }
 }
