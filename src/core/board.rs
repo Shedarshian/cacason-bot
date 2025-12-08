@@ -1,14 +1,22 @@
 use std::collections::{HashMap, HashSet};
 use crate::core::lib::*;
+use crate::core::player::Player;
 use crate::core::segment::PlacedSegment;
 use crate::core::tile::{PlacedTile, Tile};
 use crate::core::object::Object;
 
 pub struct Board {
     tiles: HashMap<Pos, PlacedTile>,
+    players: Vec<Player>
 }
 
 impl Board {
+    pub fn create(player_num: usize) -> Self {
+        Board {
+            tiles: HashMap::new(),
+            players: (0..player_num).map(|x| Player::create(x)).collect()
+        }
+    }
     pub fn search_object<'a>(&'a self, pos: Pos, seg: &'a PlacedSegment) -> Object<'a> {
         let mut occupied_pos: HashSet<(Pos, Dir8)> = HashSet::new();
         let mut to_search_pos: Vec<(Pos, Dir8)> = Vec::new();
