@@ -1,6 +1,7 @@
 use std::{collections::{HashMap, HashSet}, ops};
 use once_cell::sync::Lazy;
 
+
 #[derive(Copy, Clone, Hash, PartialEq, Eq)]
 pub enum Dir4 {
     Up,
@@ -138,6 +139,16 @@ impl ops::Add<Dir4> for Pos {
     }
 }
 
+impl Pos {
+    pub fn around(&self) -> Vec<Pos> {
+        vec![
+            Pos{x: 0, y: -1}, Pos{x: 1, y: -1},
+            Pos{x: 1, y: 0}, Pos{x: 1, y: 1}, Pos{x: 0, y: 1},
+            Pos{x: -1, y: 1}, Pos{x: -1, y: 0}, Pos{x: -1, y: -1}
+        ].iter().map(|x| *self + *x).collect()
+    }
+}
+
 #[derive(Copy, Clone, Hash, PartialEq, Eq)]
 pub enum ExtensionMajor {
     Ex0, Ex1, Ex2, Ex3, Ex4, Ex5, Ex6, Ex7, Ex8, Ex9, Ex10, ExSmallBox
@@ -179,7 +190,7 @@ pub static EXTENSION_GROUPS: Lazy<HashMap<ExtensionMajor, Vec<Extension>>> = Laz
 });
 
 pub struct ExtensionState {
-    enabled: HashSet<Extension>
+    pub enabled: HashSet<Extension>
 }
 
 impl ExtensionState {

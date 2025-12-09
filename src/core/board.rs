@@ -1,20 +1,28 @@
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
+use genawaiter::{rc::r#gen, yield_, rc::Gen, Coroutine};
 use crate::core::lib::*;
+use crate::core::io::*;
 use crate::core::player::Player;
 use crate::core::segment::PlacedSegment;
 use crate::core::tile::{PlacedTile, Tile};
 use crate::core::object::Object;
 
 pub struct Board {
-    tiles: HashMap<Pos, PlacedTile>,
-    players: Vec<Player>
+    pub tiles: HashMap<Pos, PlacedTile>,
+    pub stack: Vec<Tile>,
+    pub players: Vec<Player>,
+    pub extension: Rc<ExtensionState>,
 }
 
 impl Board {
-    pub fn create(player_num: usize) -> Self {
+    pub fn create(player_num: usize, extension: ExtensionState) -> Self {
+        let extension: Rc<ExtensionState> = Rc::new(extension);
         Board {
             tiles: HashMap::new(),
-            players: (0..player_num).map(|x| Player::create(x)).collect()
+            stack: Vec::new(),
+            players: (0..player_num).map(|x| Player::create(x)).collect(),
+            extension: extension,
         }
     }
     pub fn search_object<'a>(&'a self, pos: Pos, seg: &'a PlacedSegment) -> Object<'a> {
@@ -61,4 +69,14 @@ impl Board {
     pub fn place(&mut self, tile: Tile, pos: Pos, orient: Spin) {
         self.tiles.insert(pos, PlacedTile::create(tile, orient));
     }
+    pub fn have_tile(&self, pos: Pos) -> bool {
+        self.tiles.contains_key(&pos)
+    }
+
+    pub fn game(&mut self) -> Gen<Output, Input, impl Future<Output=()>> {
+        Gen::new(|co| async move {
+            let x = co.yield_(Output::Error {err: Error::Nothing}).await;
+        })
+    }
+
 }

@@ -1,9 +1,11 @@
 use crate::core::lib::*;
-use crate::core::segment::*;
+use crate::core::segment::{Segment, PlacedSegment, SegmentType};
+use crate::core::feature::Feature;
 
 pub struct Tile {
-    segs: Vec<Segment>,
-    sides: [SideType; 4],
+    pub segs: Vec<Segment>,
+    pub features: Vec<Feature>,
+    pub sides: [SideType; 4],
 }
 
 impl Tile {

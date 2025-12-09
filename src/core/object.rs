@@ -1,10 +1,11 @@
 use std::collections::HashSet;
+use crate::core::board::Board;
 use crate::core::segment::{PlacedSegment, SegmentType};
 use crate::core::lib::*;
 
 pub trait CanScore {
-    fn occupied(&self) -> bool;
-    fn complete(&self) -> bool;
+    fn occupied(&self, board: &Board) -> bool;
+    fn complete(&self, board: &Board) -> bool;
 }
 
 pub struct Object<'a> {
@@ -42,13 +43,13 @@ impl<'a> Object<'a> {
 }
 
 impl<'a> CanScore for Object<'a> {
-    fn occupied(&self) -> bool {
+    fn occupied(&self, board: &Board) -> bool {
         for &seg in &self.segments {
             if seg.occupied() { return true }
         }
         false
     }
-    fn complete(&self) -> bool {
+    fn complete(&self, board: &Board) -> bool {
         if self.typ().is_same_type(&SegmentType::FieldSegment {  }) { return false }
         self.opened_side.len() == 0
     }

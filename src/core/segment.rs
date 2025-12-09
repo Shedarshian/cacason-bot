@@ -1,7 +1,5 @@
 use crate::core::lib::*;
-use crate::core::object::Object;
 use crate::core::token::PlacedToken;
-use crate::core::board::Board;
 
 #[derive(Hash, PartialEq, Eq)]
 pub enum SegmentType {

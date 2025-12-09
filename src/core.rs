@@ -6,3 +6,4 @@ pub mod player;
 pub mod board;
 pub mod token;
 pub mod lib;
+pub mod io;
