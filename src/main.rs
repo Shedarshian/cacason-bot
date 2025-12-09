@@ -1,5 +1,5 @@
 pub mod core;
-use genawaiter::{rc::r#gen, yield_, rc::Gen, GeneratorState};
+use genawaiter::{rc::Gen, GeneratorState};
 
 fn main() {
     let mut l = proceed();

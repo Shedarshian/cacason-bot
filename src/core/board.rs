@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
-use genawaiter::{rc::r#gen, yield_, rc::Gen, Coroutine};
+use genawaiter::rc::{Gen, Co};
 use crate::core::lib::*;
 use crate::core::io::*;
 use crate::core::player::Player;
@@ -13,7 +13,11 @@ pub struct Board {
     pub stack: Vec<Tile>,
     pub players: Vec<Player>,
     pub extension: Rc<ExtensionState>,
+
+    pub current_player_id: usize,
 }
+
+
 
 impl Board {
     pub fn create(player_num: usize, extension: ExtensionState) -> Self {
@@ -23,9 +27,11 @@ impl Board {
             stack: Vec::new(),
             players: (0..player_num).map(|x| Player::create(x)).collect(),
             extension: extension,
+            current_player_id: 0
         }
     }
-    pub fn search_object<'a>(&'a self, pos: Pos, seg: &'a PlacedSegment) -> Object<'a> {
+    pub fn search_object<'a>(&'a self, seg: &'a PlacedSegment) -> Object<'a> {
+        let pos = seg.pos;
         let mut occupied_pos: HashSet<(Pos, Dir8)> = HashSet::new();
         let mut to_search_pos: Vec<(Pos, Dir8)> = Vec::new();
         for &dir in &seg.direction {
@@ -67,16 +73,29 @@ impl Board {
         true
     }
     pub fn place(&mut self, tile: Tile, pos: Pos, orient: Spin) {
-        self.tiles.insert(pos, PlacedTile::create(tile, orient));
+        self.tiles.insert(pos, PlacedTile::create(pos, tile, orient));
     }
     pub fn have_tile(&self, pos: Pos) -> bool {
         self.tiles.contains_key(&pos)
     }
+    pub fn next_player(&mut self) {
+        self.current_player_id = (self.current_player_id + 1) % self.players.len();
+    }
+    pub fn takeback_token_from_segment(&mut self, segment: &mut PlacedSegment) {
+        
+    }
 
     pub fn game(&mut self) -> Gen<Output, Input, impl Future<Output=()>> {
         Gen::new(|co| async move {
-            let x = co.yield_(Output::Error {err: Error::Nothing}).await;
+            self.init(&co).await;
+            self.draw_tile(&co).await;
         })
     }
-
+    pub async fn init(&mut self, co: &Co<Output, Input>) {
+        co.yield_(Output::Nothing).await;
+    }
+    pub async fn draw_tile(&mut self, co: &Co<Output, Input>) {
+        co.yield_(Output::Nothing).await;
+    }
 }
+

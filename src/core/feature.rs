@@ -14,14 +14,14 @@ pub struct Feature {
 }
 
 impl CanScore for Feature {
-    fn occupied(&self, board: &Board) -> bool {
-        self.tokens.len() > 0
-    }
     fn complete(&self, board: &Board) -> bool {
         match self.typ {
             FeatureType::Monastry => {
                 self.pos.around().iter().all(|x| board.have_tile(*x))
             }
         }
+    }
+    fn iterate_token(&self, board: &Board) -> impl Iterator<Item=&PlacedToken> {
+        self.tokens.iter()
     }
 }

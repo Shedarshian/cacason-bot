@@ -17,15 +17,17 @@ impl Tile {
 }
 
 pub struct PlacedTile {
+    pos: Pos,
     segs: Vec<PlacedSegment>,
     sides: [SideType; 4],
     orient: Spin,
 }
 
 impl PlacedTile {
-    pub fn create(tile: Tile, orient: Spin) -> PlacedTile {
+    pub fn create(pos: Pos, tile: Tile, orient: Spin) -> PlacedTile {
         PlacedTile {
-            segs: tile.segs.into_iter().map(|x| PlacedSegment::create(x, orient)).collect(),
+            pos: pos,
+            segs: tile.segs.into_iter().map(|x| PlacedSegment::create(pos, x, orient)).collect(),
             sides: tile.sides,
             orient,
         }

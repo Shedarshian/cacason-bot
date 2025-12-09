@@ -4,6 +4,7 @@ pub enum Input {
 }
 
 pub enum Output {
+    Nothing,
     Error { err: Error },
 }
 

@@ -27,14 +27,16 @@ pub struct Segment {
 }
 
 pub struct PlacedSegment {
+    pub pos: Pos,
     pub typ: SegmentType,
     pub direction: Vec<Dir8>,
     pub tokens: Vec<PlacedToken>,
 }
 
 impl PlacedSegment {
-    pub fn create(seg: Segment, orient: Spin) -> PlacedSegment {
+    pub fn create(pos: Pos, seg: Segment, orient: Spin) -> PlacedSegment {
         PlacedSegment {
+            pos: pos,
             typ: seg.typ,
             direction: seg.direction.iter()
                 .map(|x| x.rotate(orient))
