@@ -6,7 +6,7 @@ use crate::core::token::PlacedToken;
 
 pub trait CanScore {
     fn occupied(&self, board: &Board) -> bool {
-        for token in self.iterate_token(board) {
+        for _ in self.iterate_token(board) {
             return true;
         }
         false
@@ -51,7 +51,7 @@ impl<'a> Object<'a> {
 
 impl<'a> CanScore for Object<'a> {
     fn complete(&self, board: &Board) -> bool {
-        if self.typ().is_same_type(&SegmentType::FieldSegment {}) { return false }
+        if self.typ().is_field() { return false }
         self.opened_side.len() == 0
     }
     fn iterate_token(&self, board: &Board) -> impl Iterator<Item=&PlacedToken> {

@@ -3,9 +3,9 @@ use crate::core::token::PlacedToken;
 
 #[derive(Hash, PartialEq, Eq)]
 pub enum SegmentType {
-    CitySegment { pennant: i32 },
-    RoadSegment {},
-    FieldSegment {},
+    CitySegment { pennant: u8 },
+    RoadSegment { adj_road_city: Vec<usize> },
+    FieldSegment { adj_city: Vec<usize> },
     RiverSegment,
 }
 
@@ -16,6 +16,12 @@ impl SegmentType {
             (SegmentType::RoadSegment { .. }, SegmentType::RoadSegment { .. }) => true,
             (SegmentType::FieldSegment { .. }, SegmentType::FieldSegment { .. }) => true,
             (SegmentType::RiverSegment { .. }, SegmentType::RiverSegment { .. }) => true,
+            _ => false
+        }
+    }
+    pub fn is_field(&self) -> bool {
+        match self {
+            SegmentType::FieldSegment { .. } => true,
             _ => false
         }
     }

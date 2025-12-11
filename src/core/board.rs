@@ -17,8 +17,6 @@ pub struct Board {
     pub current_player_id: usize,
 }
 
-
-
 impl Board {
     pub fn create(player_num: usize, extension: ExtensionState) -> Self {
         let extension: Rc<ExtensionState> = Rc::new(extension);
@@ -92,10 +90,10 @@ impl Board {
         })
     }
     pub async fn init(&mut self, co: &Co<Output, Input>) {
-        co.yield_(Output::Nothing).await;
+        let ret = co.yield_(Output::Nothing).await;
     }
     pub async fn draw_tile(&mut self, co: &Co<Output, Input>) {
-        co.yield_(Output::Nothing).await;
+        let ret = co.yield_(Output::Nothing).await;
     }
 }
 

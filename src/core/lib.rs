@@ -140,6 +140,9 @@ impl ops::Add<Dir4> for Pos {
 }
 
 impl Pos {
+    pub fn new(x: i32, y: i32) -> Pos {
+        Pos {x: x, y: y}
+    }
     pub fn around(&self) -> Vec<Pos> {
         vec![
             Pos{x: 0, y: -1}, Pos{x: 1, y: -1},
