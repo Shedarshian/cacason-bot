@@ -216,28 +216,23 @@ fn parser(s: &str) -> IResult<&str, Vec<PicData>> {
     pics.parse(s)
 }
 
-pub fn parse() {
+pub fn parse() -> Result<Vec<PicData>, String> {
     let path = "/Users/shedarshian/Desktop/bot/chiharu/chiharu2/plugins/games/cacason/carcassonne_asset/tiledata.txt";
-    let content = match std::fs::read_to_string(path) {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("failed to read {}: {}", path, e);
-            return;
-        }
-    };
+    let mut content = std::fs::read_to_string(path).unwrap();
+    content += ".";
 
     match parser(&content) {
         Ok((remaining, pics)) => {
-            if remaining.trim().is_empty() {
-                println!("Parsed {} picture(s)", pics.len());
+            if remaining.trim().is_empty() | (remaining.trim() == ".") {
+                Ok(pics)
             } else {
-                println!(
+                Err(format!(
                     "Parsed {} picture(s), but input remains (truncated): {:?}",
                     pics.len(),
                     &remaining[..std::cmp::min(80, remaining.len())]
-                );
+                ))
             }
         }
-        Err(e) => eprintln!("parse error: {:?}", e),
+        Err(e) => Err(format!("parse error: {:?}", e)),
     }
 }
