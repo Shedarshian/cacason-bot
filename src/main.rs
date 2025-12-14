@@ -2,7 +2,7 @@ pub mod core;
 use genawaiter::{rc::Gen, GeneratorState};
 
 fn main() {
-    let v = crate::core::tiledata::parse().unwrap();
+    let v = crate::core::tilepic::parse().unwrap();
     // let mut l = proceed();
     // if let GeneratorState::Yielded(x) = l.resume_with(2) {
     //     println!("{x}");
