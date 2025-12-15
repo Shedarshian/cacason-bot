@@ -1,7 +1,8 @@
 use crate::core::lib::*;
+use crate::core::tilepic::Hint;
 use crate::core::token::PlacedToken;
 
-#[derive(Hash, PartialEq, Eq)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub enum SegmentType {
     CitySegment { pennant: u8 },
     RoadSegment { adj_road_city: Vec<usize> },
@@ -27,9 +28,11 @@ impl SegmentType {
     }
 }
 
+#[derive(Clone)]
 pub struct Segment {
     pub typ: SegmentType,
     pub direction: Vec<Dir8>,
+    pub hint: Hint,
 }
 
 pub struct PlacedSegment {
@@ -37,6 +40,7 @@ pub struct PlacedSegment {
     pub typ: SegmentType,
     pub direction: Vec<Dir8>,
     pub tokens: Vec<PlacedToken>,
+    pub hint: Hint,
 }
 
 impl PlacedSegment {
@@ -48,6 +52,7 @@ impl PlacedSegment {
                 .map(|x| x.rotate(orient))
                 .collect(),
             tokens: Vec::new(),
+            hint: seg.hint
         }
     }
     pub fn occupied(&self) -> bool {

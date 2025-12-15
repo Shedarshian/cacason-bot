@@ -3,17 +3,33 @@ use crate::core::token::PlacedToken;
 use crate::core::object::CanScore;
 use crate::core::board::Board;
 
+#[derive(Clone)]
 pub enum FeatureType {
     Monastry,
 }
 
+#[derive(Clone)]
 pub struct Feature {
-    typ: FeatureType,
-    tokens: Vec<PlacedToken>,
-    pos: Pos
+    pub typ: FeatureType,
 }
 
-impl CanScore for Feature {
+pub struct PlacedFeature {
+    pub typ: FeatureType,
+    pub tokens: Vec<PlacedToken>,
+    pub pos: Pos
+}
+
+impl PlacedFeature {
+    pub fn create(feature: Feature, pos: Pos) -> PlacedFeature {
+        PlacedFeature {
+            typ: feature.typ,
+            tokens: Vec::new(),
+            pos: pos
+        }
+    }
+}
+
+impl CanScore for PlacedFeature {
     fn complete(&self, board: &Board) -> bool {
         match self.typ {
             FeatureType::Monastry => {

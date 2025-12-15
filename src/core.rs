@@ -8,3 +8,4 @@ pub mod token;
 pub mod lib;
 pub mod io;
 pub mod tilepic;
+pub mod tiledata;

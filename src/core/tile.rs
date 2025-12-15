@@ -1,11 +1,18 @@
+use std::rc::Rc;
+use photon_rs::PhotonImage;
 use crate::core::lib::*;
 use crate::core::segment::{Segment, PlacedSegment, SegmentType};
 use crate::core::feature::Feature;
+use crate::core::tiledata::SerialNumber;
 
 pub struct Tile {
-    pub segs: Vec<Segment>,
-    pub features: Vec<Feature>,
+    pub start: bool,
+    pub serial: SerialNumber,
     pub sides: [SideType; 4],
+    pub img: Rc<PhotonImage>,
+
+    pub segments: Vec<Segment>,
+    pub features: Vec<Feature>,
 }
 
 impl Tile {
@@ -27,7 +34,7 @@ impl PlacedTile {
     pub fn create(pos: Pos, tile: Tile, orient: Spin) -> PlacedTile {
         PlacedTile {
             pos: pos,
-            segs: tile.segs.into_iter().map(|x| PlacedSegment::create(pos, x, orient)).collect(),
+            segs: tile.segments.into_iter().map(|x| PlacedSegment::create(pos, x, orient)).collect(),
             sides: tile.sides,
             orient,
         }

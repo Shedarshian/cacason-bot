@@ -1,11 +1,11 @@
-use nom::{IResult, Parser, branch::alt, bytes::complete::take, character::{char, complete::{multispace1, i32, u8, alpha1}}, combinator::{map, value, opt}, multi::{separated_list1, many1}, sequence::{delimited, separated_pair, preceded}};
+use nom::{IResult, Parser, branch::alt, bytes::complete::take, character::{char, complete::{multispace1, i32, u8, alpha1}}, combinator::{map, value, opt, success}, multi::{separated_list1, many1, count}, sequence::{delimited, separated_pair, preceded}};
 use nom::bytes::complete::tag;
 use nom::error::Error;
 use trpl::Either;
 use crate::core::lib::*;
 
-#[derive(Clone)]
-pub enum SegmentType {
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum SegmentPicType {
     City,
     Road,
     Field,
@@ -17,35 +17,129 @@ pub enum SegmentType {
     Roundabout,
     Tunnel,
 }
-#[derive(Clone)]
-pub enum HintLine { UD, LR }
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum HintLine { None, UD, LR }
+impl Default for HintLine { fn default() -> Self { HintLine::None }}
+impl HintLine {
+    pub fn try_dir4(&self) -> Option<Dir4> {
+        match self {
+            HintLine::None => None,
+            HintLine::LR => Some(Dir4::Right),
+            HintLine::UD => Some(Dir4::Up)
+        }
+    }
+    pub fn from_dir4(dir: Dir4) -> HintLine {
+        match dir {
+            Dir4::Left | Dir4::Right => HintLine::LR,
+            Dir4::Down | Dir4::Up => HintLine::UD
+        }
+    }
+}
+#[derive(Debug, Clone)]
+pub enum Hint {
+    Hintline {
+        pos: Vec<(Pos, HintLine)>,
+    },
+    LineSegment {
+        line: Vec<(Pos, Pos)>
+    }
+}
+
+impl Hint {
+    const RADIUS: i32 = 6;
+    fn draw_pos(&self, n: u8) -> Vec<Pos> {
+        match &self {
+            Hint::Hintline {pos} => {
+                if n == 1 { return vec![pos[0].0]; }
+                let len = pos.len();
+                if n as usize <= len { return pos[0..n as usize].iter().map(|x| x.0).collect(); }
+                let repeat = n as usize / len;
+                let p1 = n as usize % len;
+                let mut ret = Vec::new();
+                for (i, (p, line)) in pos.iter().enumerate() {
+                    let r = repeat + (if i < p1 { 1 } else { 0 });
+                    if r == 1 { ret.push(*p); }
+                    else if r == 2 {
+                        if *line == HintLine::UD {
+                            ret.push(*p - Pos{x: 0, y: Hint::RADIUS});
+                            ret.push(*p - Pos{x: 0, y: Hint::RADIUS});
+                        }
+                        else {
+                            ret.push(*p - Pos{y: 0, x: Hint::RADIUS});
+                            ret.push(*p - Pos{y: 0, x: Hint::RADIUS});
+                        }
+                    }
+                    else if *line != HintLine::None {
+                        ret.append(&mut dis_line(line.try_dir4().unwrap(), *p, Hint::RADIUS as f32, n));
+                    }
+                    else {
+                        ret.append(&mut dis_cir(*p, Hint::RADIUS as f32, n));
+                    }
+                }
+                ret
+            }
+            Hint::LineSegment { line } => {
+
+            }
+        }
+    }
+    fn put_pos(&self, n: u8) -> Pos {
+        match &self {
+            Hint::Hintline { pos } => {
+                let len = pos.len();
+                if len > n as usize { return pos[n as usize].0; }
+                let repeat = n as usize / len;
+                let p1 = n as usize % len;
+                let (p, line) = pos[p1];
+                if line != HintLine::None {
+                    if (line == HintLine::UD) == (repeat == 1) { p + Pos{x: 0, y: Hint::RADIUS} } // TODO maybe not right
+                    else { p + Pos{y: 0, x: Hint::RADIUS} }
+                }
+                else if repeat == 1 { p + Pos{y: 0, x: Hint::RADIUS} }
+                else { p }
+            }
+            Hint::LineSegment { line } => {
+
+            }
+        }
+    }
+}
+impl Default for Hint {
+    fn default() -> Self {
+        Hint::Hintline { pos: Vec::new() }
+    }
+}
+
+#[derive(Debug)]
 pub enum SegmentPicData {
     Point { pos: Pos },
     Line { pos: (AnyPos, AnyPos), depth: i32 },
     Tunnel { road: (i32, i32) },
     OneSide { dir: Dir4, width: i32 },
     DoubleSide { dir: (Dir4, Dir4), width: i32 },
-    Small { dir: Dir8, width: i32 },
     Else { road_sides: Vec<AllRoadSide>, adj_city: Vec<u8> }
 }
+#[derive(Debug)]
 pub struct SegmentPic {
-    pub typ: SegmentType,
-    pub hint: SegmentPicData,
-    pub hintline: Vec<Either<Pos, HintLine>>,
+    pub typ: SegmentPicType,
+    pub pic: SegmentPicData,
+    pub hint: Hint,
 }
+#[derive(Debug)]
 pub enum AnyPos {
     Pos {pos: Pos},
-    Point {typ: SegmentType, index: u8},
+    Point {typ: SegmentPicType, index: u8},
     Dir {dir: Dir4}
 }
 
 pub enum ExtraOrderData {
     Start {},
     Addable { param: Option<Either<i32, Dir4>>, pos: Option<AnyPos> },
-    Feature { typ: SegmentType, id: u8, feature: String, param: Option<Either<i32, Dir4>>},
-    Hint { typ: SegmentType, id: u8, hint: Vec<Either<Pos, HintLine>> },
-    RoadWidth { typ: SegmentType, id: u8, width: i32 }
+    Feature { typ: SegmentPicType, id: u8, feature: String, param: Option<Either<i32, Dir4>>},
+    Hint { typ: SegmentPicType, id: u8, hint: Hint },
+    RoadWidth { typ: SegmentPicType, id: u8, width: i32 }
 }
+#[derive(Debug)]
 pub enum AllRoadSide {
     Road { id: u8, sides: Vec<Dir4> },
     Manual { sides: Vec<Dir4> }
@@ -53,18 +147,18 @@ pub enum AllRoadSide {
 
 pub struct NumData {
     pub num: u8,
-    pub packname: (u8, String),
+    pub packname: (u8, char),
     pub extra_order: Vec<ExtraOrderData>
 }
-pub struct TileData {
+pub struct TilePicData {
     pub id: u8,
-    pub sides: String,
+    pub sides: [SideType; 4],
     pub segments: Vec<SegmentPic>,
     pub nums: Vec<NumData>
 }
 pub struct PicData {
     pub name: String,
-    pub tiles: Vec<TileData>
+    pub tiles: Vec<TilePicData>,
 }
 
 fn parser(s: &str) -> IResult<&str, Vec<PicData>> {
@@ -77,20 +171,20 @@ fn parser(s: &str) -> IResult<&str, Vec<PicData>> {
         value(Dir4::Left, char('l')),
         value(Dir4::Right, char('r')),
     ));
-    let city = || value(SegmentType::City, tag("City"));
-    let field = || value(SegmentType::Field, tag("Field"));
-    let road = || value(SegmentType::Road, tag("Road"));
-    let cut = value(SegmentType::Cut, tag("Cut"));
+    let city = || value(SegmentPicType::City, tag("City"));
+    let field = || value(SegmentPicType::Field, tag("Field"));
+    let road = || value(SegmentPicType::Road, tag("Road"));
+    let cut = value(SegmentPicType::Cut, tag("Cut"));
     let area = || alt((city(), field()));
     let line = || alt((
         road(),
-        value(SegmentType::River, tag("River"))
+        value(SegmentPicType::River, tag("River"))
     ));
     let point = || alt((
-        value(SegmentType::Junction, tag("Junction")),
-        value(SegmentType::Feature, tag("Feature")),
-        value(SegmentType::Roundabout, tag("Roundabout")),
-        value(SegmentType::Bridge, tag("Bridge")),
+        value(SegmentPicType::Junction, tag("Junction")),
+        value(SegmentPicType::Feature, tag("Feature")),
+        value(SegmentPicType::Roundabout, tag("Roundabout")),
+        value(SegmentPicType::Bridge, tag("Bridge")),
     ));
     let sep = multispace1;
     let any_pos = || alt((
@@ -99,48 +193,48 @@ fn parser(s: &str) -> IResult<&str, Vec<PicData>> {
         map(dir4(), |d| {AnyPos::Dir { dir: d }})
     ));
     let hint = || delimited(char('['), separated_list1(char('/'), alt((
-        map(pos(), |p| Either::Left(p)),
-        value(Either::Right(HintLine::UD), tag("ud")),
-        value(Either::Right(HintLine::LR), tag("lr"))
+        map(pos(), |x| (x, HintLine::None)),
+        (pos(), value(HintLine::LR, tag("/lr"))),
+        (pos(), value(HintLine::UD, tag("/ud"))),
     ))), char(']'));
-    fn unwrap_vec<T>(x: Option<Vec<T>>) -> Vec<T> {
-        match x { None => Vec::new(), Some(v) => v}
+    fn unwrap<T: Default>(x: Option<T>) -> T {
+        x.unwrap_or_default()
     }
-    let op_hint = || map(opt(preceded(sep, hint())), unwrap_vec);
+    let op_hint = || map(opt(preceded(sep, hint())), unwrap);
     let point_segment = map((point(), sep, pos(), op_hint()), |(t, _, p, l)| {
         SegmentPic {
-            typ: t, hintline: l,
-            hint: SegmentPicData::Point { pos: p },
+            typ: t, hint: Hint::Hintline { pos: l },
+            pic: SegmentPicData::Point { pos: p },
         }
     });
     let line_segment = map((line(), sep, any_pos(), char('-'), any_pos(), sep, i32), |(t, _, p1, _, p2, _, d)| {
         SegmentPic {
-            typ: t, hintline: Vec::new(),
-            hint: SegmentPicData::Line { pos: (p1, p2), depth: d },
+            typ: t, hint: Hint::default(),
+            pic: SegmentPicData::Line { pos: (p1, p2), depth: d },
         }
     });
     let cut_segment = map((cut, sep, any_pos(), char('-'), any_pos()), |(t, _, p1, _, p2)| {
         SegmentPic {
-            typ: t, hintline: Vec::new(),
-            hint: SegmentPicData::Line { pos: (p1, p2), depth: 0 },
+            typ: t, hint: Hint::default(),
+            pic: SegmentPicData::Line { pos: (p1, p2), depth: 0 },
         }
     });
     let tunnel_segment = map((tag("Tunnel"), sep, road(), i32, sep, road(), i32), |(_, _, _, i1, _, _, i2)| {
         SegmentPic {
-            typ: SegmentType::Tunnel, hintline: Vec::new(),
-            hint: SegmentPicData::Tunnel { road: (i1, i2) }
+            typ: SegmentPicType::Tunnel, hint: Hint::default(),
+            pic: SegmentPicData::Tunnel { road: (i1, i2) }
         }
     });
     let oneside_segment = map((alt((city(), field(), road())), sep, dir4(), sep, i32, op_hint()), |(t, _, d, _, w, l)| {
         SegmentPic {
-            typ: t, hintline: l,
-            hint: SegmentPicData::OneSide { dir: d, width: w },
+            typ: t, hint: Hint::Hintline { pos: l },
+            pic: SegmentPicData::OneSide { dir: d, width: w },
         }
     });
     let doubleside_segment = map((area(), sep, dir4(), char('-'), dir4(), sep, i32, op_hint()), |(t, _, d1, _, d2, _, w, l)| {
         SegmentPic {
-            typ: t, hintline: l,
-            hint: SegmentPicData::DoubleSide { dir: (d1, d2), width: w },
+            typ: t, hint: Hint::Hintline { pos: l },
+            pic: SegmentPicData::DoubleSide { dir: (d1, d2), width: w },
         }
     });
     let road_side = map((char('R'), u8, many1(preceded(char('-'), dir4()))), |(_, n, v)| {
@@ -149,12 +243,12 @@ fn parser(s: &str) -> IResult<&str, Vec<PicData>> {
     let manual_side = map(separated_list1(char('-'), dir4()), |v| {
         AllRoadSide::Manual { sides: v }
     });
-    let road_sides = map(opt(preceded(sep, delimited(char('('), separated_list1(char(','), alt((road_side, manual_side))), char(')')))), unwrap_vec);
-    let adj_city = map(opt(preceded(sep, delimited(char('{'), separated_list1(char(','), u8), char('}')))), unwrap_vec);
-    let else_segment = map((area(), sep, tag("else"), road_sides, adj_city, op_hint()), |(t, _, _, r, a, h)| {
+    let road_sides = map(opt(preceded(sep, delimited(char('('), separated_list1(char(','), alt((road_side, manual_side))), char(')')))), unwrap);
+    let adj_city = map(opt(preceded(sep, delimited(char('{'), separated_list1(char(','), u8), char('}')))), unwrap);
+    let else_segment = map((area(), sep, tag("else"), road_sides, adj_city, op_hint()), |(t, _, _, r, a, l)| {
         SegmentPic {
-            typ: t, hintline: h,
-            hint: SegmentPicData::Else { road_sides: r, adj_city: a },
+            typ: t, hint: Hint::Hintline { pos: l },
+            pic: SegmentPicData::Else { road_sides: r, adj_city: a },
         }
     });
     let segment = alt((point_segment, line_segment, cut_segment, tunnel_segment, oneside_segment, doubleside_segment, else_segment));
@@ -186,7 +280,7 @@ fn parser(s: &str) -> IResult<&str, Vec<PicData>> {
     });
     let hint_extra = map((tag("where"), sep, area(), sep, u8, sep, hint()), |(_, _, a, _, i, _, h)| {
         ExtraOrderData::Hint {
-            typ: a, id: i, hint: h
+            typ: a, id: i, hint: Hint::Hintline { pos: h }
         }
     });
     let roadwidth_extra = map((tag("where"), sep, line(), sep, u8, sep, i32), |(_, _, l, _, l1, _, l2)| {
@@ -196,19 +290,24 @@ fn parser(s: &str) -> IResult<&str, Vec<PicData>> {
     });
     let extra = alt((start_extra, tile_addable_extra, tile_addable_pos_extra, addable_extra, hint_extra, roadwidth_extra));
     let extras = opt(preceded(sep, separated_list1((char(';'), sep), extra)));
-    let packname = (u8, alpha1);
+    let packname = (u8, take(1u8));
     let num = map((char('*'), u8, sep, packname, extras), |(_, num, _, s, e)| {
         NumData {
-            num: num, packname: (s.0, s.1.to_string()), extra_order: match e {
+            num: num, packname: (s.0, s.1.chars().nth(0).expect("")), extra_order: match e {
                 None => Vec::new(), Some(e) => e
             }
         }
     });
     let nums = separated_list1(sep, num);
-    let sides = take(4u32);
+    let sides = count(alt((
+        value(SideType::City, char('C')),
+        value(SideType::Road, char('R')),
+        value(SideType::Field, char('F')),
+        value(SideType::River, char('S')),
+    )), 4);
     let tile = map((u8, sep, sides, sep, segments, sep, nums), |(i, _, s, _, seg, _, n)| {
-        TileData {
-            id: i, sides: s.to_string(), segments: seg, nums: n
+        TilePicData {
+            id: i, sides: s.try_into().expect(""), segments: seg, nums: n
         }
     });
     let tiles = separated_list1(sep, tile);
