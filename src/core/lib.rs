@@ -1,6 +1,8 @@
 use std::{collections::{HashMap, HashSet}, ops};
 use once_cell::sync::Lazy;
 
+use crate::core::tilepic::HintLine;
+
 
 #[derive(Copy, Clone, Hash, PartialEq, Eq, Debug)]
 pub enum Dir4 {
@@ -52,6 +54,9 @@ impl Dir4 {
     pub fn to_tilepos(self, inward: i32) -> Pos {
         Pos::new(Pos::HALFTILE, Pos::HALFTILE) + self.to_pos() * (Pos::HALFTILE - inward)
     }
+    pub fn tileside_hintline(self, inward: i32) -> (Pos, HintLine) {
+        (self.to_tilepos(inward), HintLine::from_dir4(self.rotate(Spin::Clockwise)))
+    }
 }
 
 #[derive(Copy, Clone, Hash, PartialEq, Eq, Debug)]
@@ -80,6 +85,12 @@ impl Dir8 {
             dir: self.dir.rotate(orient),
             clockwise_side: self.clockwise_side
         }
+    }
+    pub fn tileside_hintline(self, inward: i32) -> (Pos, HintLine) {
+        (self.dir.to_tilepos(inward) + self.dir.rotate(
+            if self.clockwise_side {Spin::Clockwise} else {Spin::CounterClockwise}
+        ).to_pos() * (Pos::HALFTILE / 2),
+        HintLine::from_dir4(self.dir.rotate(Spin::Clockwise)))
     }
 }
 

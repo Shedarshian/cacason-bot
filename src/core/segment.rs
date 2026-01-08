@@ -1,5 +1,5 @@
 use crate::core::lib::*;
-use crate::core::tilepic::Hint;
+use crate::core::tilepic::{Hint, SegmentPicType};
 use crate::core::token::PlacedToken;
 
 #[derive(Clone, Hash, PartialEq, Eq)]
@@ -11,6 +11,15 @@ pub enum SegmentType {
 }
 
 impl SegmentType {
+    pub fn new_from_segment_pic_type(typ: SegmentPicType) -> Result<Self, String> {
+        match typ {
+            SegmentPicType::City => Ok(SegmentType::CitySegment { pennant: 0 }),
+            SegmentPicType::Road => Ok(SegmentType::RoadSegment { adj_road_city: Vec::new() }),
+            SegmentPicType::Field => Ok(SegmentType::FieldSegment { adj_city: Vec::new() }),
+            SegmentPicType::River => Ok(SegmentType::RiverSegment {}),
+            _ => Err(format!("Can't new SegmentType from {typ:?}"))
+        }
+    }
     pub fn is_same_type(&self, other: &SegmentType) -> bool {
         match (self, other) {
             (SegmentType::CitySegment { .. }, SegmentType::CitySegment { .. }) => true,
@@ -20,9 +29,48 @@ impl SegmentType {
             _ => false
         }
     }
+    pub fn add_adj(&mut self, other: &mut Self, self_id: usize, other_id: usize) {
+        match (self, other) {
+            (SegmentType::CitySegment {pennant: _}, SegmentType::FieldSegment {adj_city: a}) => a.push(self_id),
+            (SegmentType::FieldSegment {adj_city: a}, SegmentType::CitySegment {pennant: _}) => a.push(other_id),
+            _ => ()
+        }
+    }
     pub fn is_field(&self) -> bool {
         match self {
             SegmentType::FieldSegment { .. } => true,
+            _ => false
+        }
+    }
+    pub fn is_city(&self) -> bool {
+        match self {
+            SegmentType::CitySegment { .. } => true,
+            _ => false
+        }
+    }
+    pub fn is_area(&self) -> bool {
+        match self {
+            SegmentType::FieldSegment { .. } => true,
+            SegmentType::CitySegment { .. } => true,
+            _ => false
+        }
+    }
+    pub fn is_road(&self) -> bool {
+        match self {
+            SegmentType::RoadSegment { .. } => true,
+            _ => false
+        }
+    }
+    pub fn is_river(&self) -> bool {
+        match self {
+            SegmentType::RiverSegment { .. } => true,
+            _ => false
+        }
+    }
+    pub fn is_line(&self) -> bool {
+        match self {
+            SegmentType::RoadSegment { .. } => true,
+            SegmentType::RiverSegment { .. } => true,
             _ => false
         }
     }

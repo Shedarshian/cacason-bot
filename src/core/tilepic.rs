@@ -4,7 +4,7 @@ use nom::error::Error;
 use trpl::Either;
 use crate::core::lib::*;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Copy)]
 pub enum SegmentPicType {
     City,
     Road,
@@ -47,7 +47,13 @@ pub enum Hint {
 
 impl Hint {
     const RADIUS: i32 = 6;
-    fn draw_pos(&self, n: u8) -> Vec<Pos> {
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Hint::Hintline { pos } => pos.is_empty(),
+            Hint::LineSegment { line } => line.is_empty()
+        }
+    }
+    pub fn draw_pos(&self, n: u8) -> Vec<Pos> {
         match &self {
             Hint::Hintline {pos} => {
                 if n == 1 { return vec![pos[0].0]; }
@@ -83,7 +89,7 @@ impl Hint {
             }
         }
     }
-    fn put_pos(&self, n: u8) -> Pos {
+    pub fn put_pos(&self, n: u8) -> Pos {
         match &self {
             Hint::Hintline { pos } => {
                 let len = pos.len();
@@ -114,7 +120,7 @@ impl Default for Hint {
 pub enum SegmentPicData {
     Point { pos: Pos },
     Line { pos: (AnyPos, AnyPos), depth: i32 },
-    Tunnel { road: (i32, i32) },
+    Tunnel { road: (usize, usize) },
     OneSide { dir: Dir4, width: i32 },
     DoubleSide { dir: (Dir4, Dir4), width: i32 },
     Else { road_sides: Vec<AllRoadSide>, adj_city: Vec<u8> }
@@ -128,7 +134,7 @@ pub struct SegmentPic {
 #[derive(Debug)]
 pub enum AnyPos {
     Pos {pos: Pos},
-    Point {typ: SegmentPicType, index: u8},
+    Point {typ: SegmentPicType, index: usize},
     Dir {dir: Dir4}
 }
 
@@ -219,10 +225,10 @@ fn parser(s: &str) -> IResult<&str, Vec<PicData>> {
             pic: SegmentPicData::Line { pos: (p1, p2), depth: 0 },
         }
     });
-    let tunnel_segment = map((tag("Tunnel"), sep, road(), i32, sep, road(), i32), |(_, _, _, i1, _, _, i2)| {
+    let tunnel_segment = map((tag("Tunnel"), sep, road(), u8, sep, road(), u8), |(_, _, _, i1, _, _, i2)| {
         SegmentPic {
             typ: SegmentPicType::Tunnel, hint: Hint::default(),
-            pic: SegmentPicData::Tunnel { road: (i1, i2) }
+            pic: SegmentPicData::Tunnel { road: (i1 as usize, i2 as usize) }
         }
     });
     let oneside_segment = map((alt((city(), field(), road())), sep, dir4(), sep, i32, op_hint()), |(t, _, d, _, w, l)| {
