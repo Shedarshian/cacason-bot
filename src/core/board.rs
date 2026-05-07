@@ -1,32 +1,55 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use genawaiter::rc::{Gen, Co};
+use rand::seq::SliceRandom;
 use crate::core::lib::*;
 use crate::core::io::*;
-use crate::core::player::Player;
+use crate::core::player::{Player, User};
 use crate::core::segment::PlacedSegment;
 use crate::core::tile::{PlacedTile, Tile};
 use crate::core::object::Object;
+use crate::core::tiledata::read_tile_data;
+use crate::core::token::{PublicBelongingToken, PublicToken};
 
-pub struct Board {
+pub struct Board<T> where T: User {
     pub tiles: HashMap<Pos, PlacedTile>,
     pub stack: Vec<Tile>,
-    pub players: Vec<Player>,
-    pub extension: Rc<ExtensionState>,
+    pub river_stack: Vec<Tile>,
+    pub tokens: HashMap<PublicToken, u32>,
+    pub belonging_tokens: HashMap<PublicBelongingToken, u32>,
 
+    pub players: Vec<Player<T>>,
+    pub extension: Rc<ExtensionState>,
     pub current_player_id: usize,
 }
 
-impl Board {
-    pub fn create(player_num: usize, extension: ExtensionState) -> Self {
+impl<T> Board<T> where T: User {
+    pub fn create(users: Vec<T>, extension: ExtensionState) -> Self {
         let extension: Rc<ExtensionState> = Rc::new(extension);
-        Board {
+        let mut tiles = read_tile_data(&extension.enabled).expect("Error while reading tile data");
+        tiles.shuffle(&mut rand::rng());
+        let mut board = Board {
             tiles: HashMap::new(),
-            stack: Vec::new(),
-            players: (0..player_num).map(|x| Player::create(x)).collect(),
+            stack: vec![],
+            river_stack: vec![],
+            tokens: HashMap::new(),
+            belonging_tokens: HashMap::new(),
+
+            players: users.into_iter().enumerate().map(|(x, u)| Player::create(x, u)).collect(),
             extension: extension,
             current_player_id: 0
+        };
+        for tile in tiles.into_iter() {
+            if tile.sides.iter().any(|x| *x == SideType::River) {
+                board.river_stack.push(tile)
+            }
+            else {
+                board.stack.push(tile);
+            }
         }
+        // TODO start tile
+        // TODO token
+        board
     }
     pub fn search_object<'a>(&'a self, seg: &'a PlacedSegment) -> Object<'a> {
         let pos = seg.pos;
@@ -83,17 +106,45 @@ impl Board {
         
     }
 
-    pub fn game(&mut self) -> Gen<Output, Input, impl Future<Output=()>> {
+    pub fn endgame_score(&mut self) {
+        
+    }
+
+    pub fn game(&mut self) -> Gen<Output, Input, impl Future<Output=Result<bool, String>>> {
         Gen::new(|co| async move {
-            self.init(&co).await;
-            self.draw_tile(&co).await;
+            let mut midEnd: bool = false;
+            loop {
+                match self.turn(&co).await {
+                    Ok(()) => {
+                        self.next_player();
+                    }
+                    Err(GameEnd::CantPutError) => {
+                        midEnd = true;
+                        break;
+                    }
+                    Err(GameEnd::NoDeckEnd) => {
+                        break;
+                    }
+                    Err(GameEnd::RunTimeError { arg }) => {
+                        return Err(arg)
+                    }
+                }
+            }
+            self.endgame_score();
+            Ok(midEnd)
         })
     }
-    pub async fn init(&mut self, co: &Co<Output, Input>) {
-        let ret = co.yield_(Output::Nothing).await;
+    pub async fn turn(&mut self, co: &Co<Output, Input>) -> Result<(), GameEnd> {
+        let remain_turns = 1;
+
+        while remain_turns > 0 {
+
+        }
+        Ok(())
     }
-    pub async fn draw_tile(&mut self, co: &Co<Output, Input>) {
+    pub async fn draw_tile(&mut self, co: &Co<Output, Input>) -> Result<(), GameEnd> {
         let ret = co.yield_(Output::Nothing).await;
+        Ok(())
     }
 }
 

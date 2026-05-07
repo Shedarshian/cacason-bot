@@ -1,18 +1,19 @@
 use std::collections::HashSet;
 use crate::core::board::Board;
+use crate::core::player::User;
 use crate::core::segment::{PlacedSegment, SegmentType};
 use crate::core::lib::*;
 use crate::core::token::PlacedToken;
 
-pub trait CanScore {
-    fn occupied(&self, board: &Board) -> bool {
+pub trait CanScore<T> where T: User {
+    fn occupied(&self, board: &Board<T>) -> bool {
         for _ in self.iterate_token(board) {
             return true;
         }
         false
     }
-    fn complete(&self, board: &Board) -> bool;
-    fn iterate_token(&self, board: &Board) -> impl Iterator<Item=&PlacedToken>;
+    fn complete(&self, board: &Board<T>) -> bool;
+    fn iterate_token(&self, board: &Board<T>) -> impl Iterator<Item=&PlacedToken>;
 }
 
 pub struct Object<'a> {

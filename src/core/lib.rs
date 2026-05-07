@@ -434,18 +434,9 @@ pub fn dis_line(dir: Dir4, pos: Pos, radius: f32, n: u8) -> Vec<Pos> {
     }
     ret
 }
-// def disLine(line: str, pos: Pos, radius: float, r: int):
-//     ret: list[Pos] = []
-//     if line == "ud":
-//         ang: float = -radius
-//         d = 2 * radius / (r - 1)
-//         for _ in range(r):
-//             ret.append(pos + Pos(0, round(ang)))
-//             ang += d
-//     elif line == "lr":
-//         ang = -radius
-//         d = 2 * radius / (r - 1)
-//         for _ in range(r):
-//             ret.append(pos + Pos(round(ang), 0))
-//             ang += d
-//     return ret
+
+pub enum GameEnd {
+    NoDeckEnd,
+    CantPutError,
+    RunTimeError { arg: String },
+}

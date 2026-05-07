@@ -123,7 +123,7 @@ pub enum SegmentPicData {
     Tunnel { road: (usize, usize) },
     OneSide { dir: Dir4, width: i32 },
     DoubleSide { dir: (Dir4, Dir4), width: i32 },
-    Else { road_sides: Vec<AllRoadSide>, adj_city: Vec<u8> }
+    Else { road_sides: Option<AllRoadSide>, adj_city: Vec<u8> }
 }
 #[derive(Debug)]
 pub struct SegmentPic {
@@ -147,8 +147,8 @@ pub enum ExtraOrderData {
 }
 #[derive(Debug)]
 pub enum AllRoadSide {
-    Road { id: u8, sides: Vec<Dir4> },
-    Manual { sides: Vec<Dir4> }
+    Road { sides: Vec<(u8, Vec<Dir4>)> },
+    Manual { sides: Vec<(Dir4, Dir4)> }
 }
 
 pub struct NumData {
@@ -244,14 +244,20 @@ fn parser(s: &str) -> IResult<&str, Vec<PicData>> {
         }
     });
     let road_side = map((char('R'), u8, many1(preceded(char('-'), dir4()))), |(_, n, v)| {
-        AllRoadSide::Road { id: n, sides: v }
+        (n, v)
     });
-    let manual_side = map(separated_list1(char('-'), dir4()), |v| {
-        AllRoadSide::Manual { sides: v }
+    let manual_side = map(separated_pair(dir4(), char('-'), dir4()), |(v1, v2)| {
+        (v1, v2)
     });
-    let road_sides = map(opt(preceded(sep, delimited(char('('), separated_list1(char(','), alt((road_side, manual_side))), char(')')))), unwrap);
+    let road_sides = map(separated_list1(char(','), road_side), |l| {
+        AllRoadSide::Road { sides: l }
+    });
+    let manual_sides = map(separated_list1(char(','), manual_side), |l| {
+        AllRoadSide::Manual { sides: l }
+    });
+    let all_road_sides = opt(alt((road_sides, manual_sides)));
     let adj_city = map(opt(preceded(sep, delimited(char('{'), separated_list1(char(','), u8), char('}')))), unwrap);
-    let else_segment = map((area(), sep, tag("else"), road_sides, adj_city, op_hint()), |(t, _, _, r, a, l)| {
+    let else_segment = map((area(), sep, tag("else"), all_road_sides, adj_city, op_hint()), |(t, _, _, r, a, l)| {
         SegmentPic {
             typ: t, hint: Hint::Hintline { pos: l },
             pic: SegmentPicData::Else { road_sides: r, adj_city: a },

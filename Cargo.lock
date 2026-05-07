@@ -104,6 +104,7 @@ dependencies = [
  "nom",
  "once_cell",
  "photon-rs",
+ "rand 0.9.2",
  "tokio",
  "trpl",
 ]

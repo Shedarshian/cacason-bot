@@ -46,7 +46,7 @@ impl Segment {
     }
 }
 
-pub fn read_tile_data(pack: HashSet<Extension>) -> Result<Vec<Tile>, String> {
+pub fn read_tile_data(pack: &HashSet<Extension>) -> Result<Vec<Tile>, String> {
     let pics = parse()?;
     let ret = Vec::new();
     for pic in pics {
@@ -140,22 +140,29 @@ pub fn read_tile_data(pack: HashSet<Extension>) -> Result<Vec<Tile>, String> {
                         segments[i0].eat(&mut r1);
                     }
                     (SegmentPicType::City | SegmentPicType::Field, SegmentPicData::Else { road_sides, adj_city }) => {
-                        if road_sides.len() == 0 {
-                            segments.push(Segment {
-                                typ: SegmentType::new_from_segment_pic_type(seg.typ).unwrap(),
-                                direction: all_sides.iter().cloned().collect(),
-                                hint: seg.hint
-                            });
-                            let l = segments.len() - 1;
-                            let (s1, s2) = segments.split_at_mut(l);
-                            for (i, s) in s1.iter_mut().enumerate() {
-                                if s.typ.is_area() {
-                                    s.typ.add_adj(&mut s2[0].typ, i, l);
+                        match road_sides {
+                            None => {
+                                segments.push(Segment {
+                                    typ: SegmentType::new_from_segment_pic_type(seg.typ).unwrap(),
+                                    direction: all_sides.iter().cloned().collect(),
+                                    hint: seg.hint
+                                });
+                                let l = segments.len() - 1;
+                                let (s1, s2) = segments.split_at_mut(l);
+                                for (i, s) in s1.iter_mut().enumerate() {
+                                    if s.typ.is_area() {
+                                        s.typ.add_adj(&mut s2[0].typ, i, l);
+                                    }
                                 }
                             }
-                        }
-                        else {
-
+                            Some(AllRoadSide::Road { sides }) => {
+                                for (i, dir) in sides {
+                                    // TODO
+                                }
+                            }
+                            Some(AllRoadSide::Manual { sides }) => {
+                                // TODO
+                            }
                         }
                     }
                     _ => return Err(format!("Segment {:?} type and pic not valid", &seg))
