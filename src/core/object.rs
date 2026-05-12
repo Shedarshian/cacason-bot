@@ -50,12 +50,12 @@ impl<'a> Object<'a> {
     }
 }
 
-impl<'a> CanScore for Object<'a> {
-    fn complete(&self, board: &Board) -> bool {
+impl<'a, T> CanScore<T> for Object<'a> where T: User {
+    fn complete(&self, board: &Board<T>) -> bool {
         if self.typ().is_field() { return false }
         self.opened_side.len() == 0
     }
-    fn iterate_token(&self, board: &Board) -> impl Iterator<Item=&PlacedToken> {
+    fn iterate_token(&self, board: &Board<T>) -> impl Iterator<Item=&PlacedToken> {
         self.segments.iter().flat_map(|seg| seg.tokens.iter())
     }
 }

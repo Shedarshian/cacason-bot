@@ -2,6 +2,7 @@ use crate::core::lib::*;
 use crate::core::token::PlacedToken;
 use crate::core::object::CanScore;
 use crate::core::board::Board;
+use crate::core::player::User;
 
 #[derive(Clone)]
 pub enum FeatureType {
@@ -29,15 +30,15 @@ impl PlacedFeature {
     }
 }
 
-impl CanScore for PlacedFeature {
-    fn complete(&self, board: &Board) -> bool {
+impl<T> CanScore<T> for PlacedFeature where T: User {
+    fn complete(&self, board: &Board<T>) -> bool {
         match self.typ {
             FeatureType::Monastry => {
                 self.pos.around().iter().all(|x| board.have_tile(*x))
             }
         }
     }
-    fn iterate_token(&self, board: &Board) -> impl Iterator<Item=&PlacedToken> {
+    fn iterate_token(&self, board: &Board<T>) -> impl Iterator<Item=&PlacedToken> {
         self.tokens.iter()
     }
 }
